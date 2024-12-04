@@ -1,0 +1,199 @@
+## Imports
+
+```{python}
+import pandas as pd
+import numpy as np
+```
+
+## Import data
+
+```{python}
+yao = pd.read_csv("data/yaounde_mini.csv")
+yao
+```
+
+## Introducing agg()
+
+```{python}
+# classical way
+yao["age"].mean()
+```
+
+
+```{python}
+## agg
+yao.agg(mean_age = ("age", "mean")) # turple
+```
+
+# Syntax
+
+df.agg(aummary_name("column to summarize", "summary function"))
+
+
+```{python}
+yao_summary = yao.agg(mean_age = ("age", "mean"), median_age = ("age", "median"))
+
+yao_summary 
+```
+
+## Practice Q: Mean and Median weight
+
+
+```{python}
+
+yao_weight_summary = yao.agg(
+    mean_weight=("weight_kg", "mean"), median_weight=("weight_kg", "median")
+)
+yao_weight_summary
+```
+
+## Introducing groupby()
+
+
+```{python}
+yao.groupby("sex")
+```
+
+
+```{python}
+yao.groupby("sex").agg(
+    mean_weight=("weight_kg", "mean"), median_weight=("weight_kg", "median")
+).reset_index()
+```
+# A more readable version
+
+
+```{python}
+(
+    yao.groupby("sex")
+    .agg(mean_weight=("weight_kg", "mean"), median_weight=("weight_kg", "median"))
+    .reset_index()
+)
+```
+
+# Max and Min weights + number of individuals per neighbourhood
+```{python}
+(
+    yao.groupby("neighborhood")
+    .agg(
+        max_weight=("weight_kg", "max"),
+        min_weight=("weight_kg", "min"),
+        num_inds=("weight_kg", "size"),
+    )
+    .reset_index()
+)
+```
+
+# Practice Q: Min and Max height per sex
+
+
+```{python}
+(
+    yao.groupby("sex")
+    .agg(
+        min_height=("height_cm", "min"),
+        max_height=("height_cm", "max"),
+        count=("height_cm", "size")
+    )
+    .reset_index()
+)
+```
+
+## Nested groupings
+
+```{python}
+(
+    yao.groupby(["neighborhood", "sex"])
+    .agg(
+        max_weight=("weight_kg", "max"),
+        min_weight=("weight_kg", "min"),
+        num_inds=("weight_kg", "size"),
+    )
+    .reset_index()
+)
+```
+
+## Practice Q: Min and Max height per age sex group
+
+
+```{python}
+(
+    yao.groupby(["age_category_3","sex"])
+    .agg(
+        min_height=("height_cm", "min"),
+        max_height=("height_cm", "max")
+        
+    )
+    .reset_index()
+)
+```
+
+## NaN values in agg()
+
+
+```{python}
+(yao.groupby("is_smoker", dropna=False).agg(weight_mean=("weight_kg", "mean"),count=("weight_kg", "size"))).reset_index()
+```
+
+## mean weight by pregnancy status
+
+```{python}
+(
+    yao.groupby("is_pregnant", dropna=False)
+    .agg(
+        weight_mean=("weight_kg", "mean"),
+        count=("weight_kg", "size"),
+    )
+    .reset_index()
+)
+```
+
+## Custom stats with lamda functions
+
+
+```{python}
+def range_func(x):
+    return max(x) - min(x)
+range_func([2,7,8])
+```
+
+```{python}
+range_func = lambda x : max(x) - min(x)
+range_func([2,7,8])
+```
+
+# Range wights per neighbourhood
+
+
+```{python}
+(yao.groupby("neighborhood").agg(weight_range=("weight_kg", range_func)).reset_index())
+```
+# Or
+
+```{python}
+(
+    yao.groupby("neighborhood")
+    .agg(weight_range=("weight_kg", lambda x: max(x) - min(x)))
+    .reset_index()
+)
+```
+# coefficient of varation
+
+
+```{python}
+(
+    yao.groupby("neighborhood")
+    .agg(weight_range=("weight_kg", lambda x: ((x.std() / x.mean()) * 100).round(2)))
+    .reset_index()
+)
+```
+## Practice Q: IQR of age by neighbourhood
+
+
+```{python}
+(
+    yao.groupby("neighborhood")
+    .agg(iqr_age=("age", lambda x: x.quantile(0.75) - x.quantile(0.25)))
+    .reset_index()
+)
+```

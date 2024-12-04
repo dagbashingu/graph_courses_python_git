@@ -1,0 +1,58 @@
+---
+title: "India TB Pathways Analysis"
+author: "Emmanuel Dagba"
+format: html
+execute: 
+  echo: false
+---
+
+
+```{python}
+# Imports
+import plotly as plt
+import plotly.express as px
+import pandas as pd
+from itables import show
+```
+
+## Outlook of the dataset
+```{python}
+tb_pathways = pd.read_csv("C:/Users/user/Documents/First_Python_Workspace/india_tb_pathways_and_costs.csv")
+
+show(tb_pathways)
+```
+## Map
+![Map of Tamil Nadu](images/map.png)
+
+## Plot
+```{python}
+Alcohol_Sex = px.histogram(
+  tb_pathways, 
+  x = "Sex", 
+  color="Alcohol",
+  barnorm="percent", 
+  text_auto=".1f"
+)
+Alcohol_Sex.update_layout(
+    xaxis_title="Gender",  
+    yaxis_title="Percentage (%)", 
+    title = "Alcohol Consumers by Gender",
+    font=dict(family="Arial", size=14, color="black", weight = "bold"),   
+    xaxis=dict(tickfont=dict(family='Arial', size=12, color='black', weight = "bold")), 
+    yaxis=dict(tickfont=dict(family='Arial', size=12, color='black', weight = "bold")) 
+)
+Alcohol_Sex.update_traces(textfont=dict(family='Arial', size=14, color='white',weight = "bold"),
+                  textposition='auto')
+
+Alcohol_Sex.show()
+```
+
+```{python}
+alcohol_consumers = int((tb_pathways['Alcohol'] == "Yes").sum())
+
+non_alcohol_consumers = int((tb_pathways['Alcohol'] == "No").sum())
+```
+
+# Insights from plot
+
+There are more non-alcohol consumers (`{python} non_alcohol_consumers`) than alcohol consumers (`{python} alcohol_consumers`). Almost all alcohol consumers are male.

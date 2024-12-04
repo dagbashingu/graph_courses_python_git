@@ -1,0 +1,459 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Workshop 7: Using LLMs to Extract Information from Job Descriptions\"\n",
+        "author-meta: \"Emmanuel Dagba\"\n",
+        "---\n",
+        "\n",
+        "\n",
+        "# Introduction\n",
+        "\n",
+        "For this week's workshop, you will analyze job posting data using Large Language Models (LLMs). You'll extract structured information from job descriptions and create visualizations to understand patterns in the data science job market.\n",
+        "\n",
+        "# Setup\n",
+        "\n",
+        "First, make sure this document is in your `graph_courses_python` folder, where your virtual environment is activated and you have the required packages installed.\n",
+        "\n",
+        "Run the following code to load the necessary packages:\n"
+      ],
+      "id": "d733ba1c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "from openai import OpenAI\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import plotly.express as px\n",
+        "from local_settings import OPENAI_KEY # Assumes you have a local_settings.py file in your folder with your OpenAI key  \n",
+        "# Initialize the OpenAI client\n",
+        "client = OpenAI(api_key=OPENAI_KEY)"
+      ],
+      "id": "3e200b13",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Define an `llm_chat` Function\n",
+        "\n",
+        "Before we start our analysis, let's create a helper function to simplify interactions with the LLM.\n",
+        "\n",
+        "Test the function below by asking the question \"What is Python (the language) named after?\"\n"
+      ],
+      "id": "e352e168"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def llm_chat(message):\n",
+        "    response = client.chat.completions.create(\n",
+        "        model=\"gpt-4o-mini\", messages=[{\"role\": \"user\", \"content\": message}]\n",
+        "    )\n",
+        "    return response.choices[0].message.content"
+      ],
+      "id": "ea7cc5d7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Test the function here\n",
+        "llm_chat(\"What is Python (the language) named after?\")"
+      ],
+      "id": "5c2cff85",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Get the Data\n",
+        "\n",
+        "The dataset to be used contains job postings scraped from the website Glassdoor. You can see the scraping project [here](https://github.com/picklesueat/data_jobs_data).\n",
+        "\n",
+        "Download it from the course website and place it in an appropriate location in your folder.\n",
+        "\n",
+        "Load the data into a pandas DataFrame:\n"
+      ],
+      "id": "35bee169"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Load the data into a pandas DataFrame\n",
+        "# Your code here\n",
+        "jobs = pd.read_csv(\"data/glassdoor_jobs_sample.csv\")\n",
+        "jobs"
+      ],
+      "id": "724be376",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs.info()"
+      ],
+      "id": "53386a6d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "# Task 1: Extract Years of Experience Required\n",
+        "\n",
+        "## Part A: Create and Test LLM Function\n",
+        "\n",
+        "We will use the LLM to extract the minimum years of experience required from job descriptions.\n",
+        "\n",
+        "We have written the prompt for you. Vectorize the function, then test it on the first few rows of the dataset.\n"
+      ],
+      "id": "09221ec9"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def yrs_exp(description):\n",
+        "    prompt = f\"\"\"\n",
+        "    Extract the minimum years of experience required from this job description. \n",
+        "    Return ONLY a number. If a range is given, return the lower number.\n",
+        "    If no years of experience are explicitly mentioned, return 'NA'.\n",
+        "    Here's the job description:\n",
+        "    {description}\n",
+        "    \"\"\"\n",
+        "    return llm_chat(prompt)\n",
+        "\n",
+        "# Vectorize the function and test it on the first few rows\n",
+        "# Your code here\n",
+        "yrs_exp_vec = np.vectorize(yrs_exp)"
+      ],
+      "id": "0137bdec",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs_subset_test = jobs.head()\n",
+        "jobs_subset_test[\"years_experience\"] = yrs_exp_vec(jobs_subset_test[\"job_description\"])\n",
+        "jobs_subset_test"
+      ],
+      "id": "61bf7b38",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs_subset_test.to_csv(\"outputs/jobs.csv\")"
+      ],
+      "id": "b39d09c6",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Write the data to a CSV file and check if the results make sense by comparing them to the original job descriptions.\n",
+        "\n",
+        "## Part B: Process Full Dataset\n",
+        "\n",
+        "Now that we've confirmed the function works well, let's apply it to the full dataset. Note that this may take about 2 to 3 minutes to run. (For heavier workflows, we recommend you look into 'parallel processing'.)\n"
+      ],
+      "id": "3156c337"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Apply the vectorized function to the full dataset\n",
+        "# Your code here\n",
+        "jobs[\"years_experience\"] = yrs_exp_vec(jobs[\"job_description\"])\n",
+        "jobs"
+      ],
+      "id": "280d0a3d",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Part C: Convert to Numeric\n",
+        "\n",
+        "The `years_required` column is currently a string. Convert it to a numeric type using the `pd.to_numeric` function, with the `errors='coerce'` argument so that any non-numeric values are converted to `NaN`.\n"
+      ],
+      "id": "e3168b5a"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs.info()\n",
+        "# Convert 'years_required' to numeric\n",
+        "# Your code here\n",
+        "jobs[\"years_experience\"] = pd.to_numeric(jobs[\"years_experience\"] , errors =\"coerce\")\n",
+        "jobs"
+      ],
+      "id": "cf401ad4",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Part D: Create Visualization\n",
+        "\n",
+        "Create a visualization comparing years of experience required to the midpoint salary estimate. You'll need to:\n",
+        "\n",
+        "- Create a scatter plot using Plotly Express.\n",
+        "- Use the `midpoint_salary_estimate` column for salary and `years_required` for the x-axis.\n"
+      ],
+      "id": "ae9edcda"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Create a scatter plot\n",
+        "# Your code here\n",
+        "px.scatter(\n",
+        "    jobs, \n",
+        "    x = \"years_experience\", \n",
+        "    y = \"midpoint_salary_estimate\", \n",
+        "    title = \"Salary by years of experience required\",\n",
+        "    labels = {\"years_experience\" : \"Years of Experience Required\", \"midpoint_salary_estimate\": \"Salary\"},\n",
+        ")"
+      ],
+      "id": "3bec26cd",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Describe any relationships you see in the plot.\n",
+        "\n",
+        "The plot does not show a clear pattern but we can see that the years of experience required does not really have a strong correlation with the salary, however majority of the roles do not require years of experience greater than 5 years and the salary does not exceed 100k for majority of the roles except for a few outliers.\n",
+        "\n",
+        "# Task 2: Extract Programming Language Requirements\n",
+        "\n",
+        "In this task, we will ask the LLM to extract the programming languages mentioned in the job descriptions.\n",
+        "\n",
+        "## Part A: Create and Test LLM Function\n",
+        "\n",
+        "Now, create a function that asks the model about the programming languages mentioned in the job description. Specifically, it should return one of four categories regarding the languages mentioned: `\"R\"`, `\"Python\"`, `\"both\"`, or `\"neither\"`. This time, you'll need to craft the prompt yourself.\n",
+        "\n",
+        "Test your function on a few rows and refine your prompt until you get reliable results. (You can write the output to a CSV file to more easily compare the results to the original job descriptions.)\n"
+      ],
+      "id": "04080035"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def lang_req(description):\n",
+        "    # Craft your prompt here\n",
+        "    prompt = f\"\"\"\n",
+        "   Consider the job description:\n",
+        "   Extract the programming languages following the guide:\n",
+        "   return \"R\" if R alone is mentioned,\n",
+        "   return \"Python\" if Python alone is mentioned,\n",
+        "   return \"both\" if both Python and R are mentioned,\n",
+        "   return \"neither\" if neither Python or R are mentioned\n",
+        "    Do not include explanations keep it structured\n",
+        "    Here's the job description:\n",
+        "     {description}\n",
+        "    \"\"\"\n",
+        "    return llm_chat(prompt)\n",
+        "\n",
+        "# Vectorize the function and test it on the first few rows\n",
+        "# Your code here\n",
+        "lang_req_vec = np.vectorize(lang_req)"
+      ],
+      "id": "30e37b3a",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs_sample = jobs.head()"
+      ],
+      "id": "ed431476",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs_sample [\"reguired_language\"] = lang_req_vec(jobs_sample[\"job_description\"])\n",
+        "\n",
+        "jobs_sample"
+      ],
+      "id": "1dd8e4d7",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Part B: Process Full Dataset\n",
+        "\n",
+        "Once you're satisfied with your function's performance, apply it to the full dataset:\n"
+      ],
+      "id": "b995dcfd"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Apply the function to the full dataset\n",
+        "# Your code here\n",
+        "\n",
+        "jobs[\"reguired_language\"] = lang_req_vec(jobs[\"job_description\"])\n",
+        "\n",
+        "jobs"
+      ],
+      "id": "b76d6fdd",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Part C: Create Visualization\n",
+        "\n",
+        "First, count the number of jobs that require each of the four categories using the `value_counts` method. \n"
+      ],
+      "id": "1b59fb7c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Count the occurrences of each category\n",
+        "# Your code here\n",
+        "jobs[\"reguired_language\"].value_counts()"
+      ],
+      "id": "82c8c2a0",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Create a box plot comparing salary distributions across the different programming language requirement categories:\n"
+      ],
+      "id": "d498d7ce"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Create a box plot using Plotly Express\n",
+        "# Your code here\n",
+        "\n",
+        "px.box(jobs, x=\"reguired_language\", y=\"midpoint_salary_estimate\")"
+      ],
+      "id": "10923ff1",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Write a few sentences describing any patterns you see in the plot. (Note that this is a very small sample of jobs, so don't read too much into the results.)\n",
+        "\n",
+        "It is observed that roles with a combination of Python and R have higher salaries, however, roles requiring Python has more salary variations while the few salary outliers are found in roles which do not require any programming language.\n",
+        "\n",
+        "# Optional Challenge: Most Common Technical Skills\n",
+        "\n",
+        "Use an LLM function to extract the most common technical skills mentioned in job descriptions, then create a visualization to highlight these skills.\n",
+        "\n",
+        "You will need to design your own approach to extract and standardize technical skills, being explicit in your prompt about what constitutes a technical skill.\n",
+        "\n",
+        "There's no single correct way to classify and standardize skills—document your choices and reasoning as you develop your solution.\n"
+      ],
+      "id": "faedb33c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "def tech_skill(job):\n",
+        "    # Craft your prompt here\n",
+        "    prompt = f\"\"\"\n",
+        "   Consider the job_title:\n",
+        "   Generate required technical skill for each industry\n",
+        "     {job}\n",
+        "    \"\"\"\n",
+        "    return llm_chat(prompt)\n",
+        "\n",
+        "tech_skill_vec = np.vectorize (tech_skill)"
+      ],
+      "id": "5c9381cc",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs[\"technical_skill\"] = tech_skill_vec(jobs[\"industry\"])"
+      ],
+      "id": "8073688b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "jobs_subset_test[\"technical_skill\"] = tech_skill_vec(jobs[\"job_title\"])\n",
+        "jobs_subset_test"
+      ],
+      "id": "6fadb9af",
+      "execution_count": null,
+      "outputs": []
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "c:\\Users\\user\\Documents\\Graph_Courses_Python\\.venv\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}

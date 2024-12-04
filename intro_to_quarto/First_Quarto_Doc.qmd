@@ -1,0 +1,81 @@
+---
+title: "My first Quarto Doc"
+author: "Erkwagh Dagba"
+format: pdf
+execute: 
+  echo: false
+    
+    
+---
+
+# Level 1 header
+
+Markdown lets you *italize* and also **embolden** text.
+
+You can also define bullet lists:
+- First element
+- Second element.
+
+You can also add [links](https://thegraphcourses.org/)
+
+You can also embed images
+![My first virtual environment](images/VS_VENV.png)
+
+## Level 2 header
+
+### Level 3 header
+
+
+# Section 1
+
+Hello
+
+# Section 2
+
+World
+
+
+```{python}
+#| echo: false
+2 + 2
+```
+
+
+```{python}
+#| echo: false
+3 * 4
+for num in [1,2,3,4] :
+    print(num)
+4 * 4
+```
+
+# Displaying tables
+
+```{python}
+#| echo: false
+import plotly.express as px
+from itables import show
+
+tips = px.data.tips()
+show(tips)
+```
+
+# Displaying plots
+
+```{python}
+px.violin(tips, x = "tip", y = "sex")
+```
+
+# Displaying static plots
+
+```{python}
+tips_sex = px.violin(tips, x = "tip", y = "sex")
+
+tips_sex.write_image("outputs/tips_sex.png")
+```
+![](outputs/tips_sex.png)
+
+
+```{python}
+tips
+```

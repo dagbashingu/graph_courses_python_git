@@ -1,0 +1,77 @@
+---
+title: "New Design"
+author: "Erkwagh Dagba"
+format: pptx
+execute: 
+  echo: false
+    
+    
+---
+
+
+```{python}
+# Imports
+import pandas as pd
+#from sklearn.cluster import KMeans
+#from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+import seaborn as sns
+import plotly.express as px
+pd.set_option('display.max_columns', None)
+import numpy as np
+```
+
+
+```{python}
+ND_Data = pd.read_csv("Data/ND_DHS_Trend.csv")
+ND_Data
+```
+
+```{python}
+state_names = ND_Data["Var1"].unique()
+len(state_names)
+```
+
+```{python}
+for state in state_names:
+    subset_ND_Data = ND_Data[(ND_Data["Var1"] == state)]
+    # Reshape the data for Seaborn
+    df_melted = subset_ND_Data.melt(id_vars='Var3', value_vars=['Var9', 'Var14', 'Var17', 'Var18'], 
+                    var_name='Metrics', value_name='Values')
+
+    df_melted = df_melted.sort_values('Var3')
+    # Create a line plot with multiple variables
+    plt.figure(figsize=(10, 6))
+    ax = sns.lineplot(data=df_melted, x='Var3', y='Values', hue='Metrics', marker='o')
+
+    # Define new labels for the legend
+    new_labels = {
+    'Var9': 'ITN use among CU5',
+    'Var14': 'IPTp3+ uptake',
+    'Var17': 'Testing Rate',
+    'Var18': 'Treatment using ACT'
+    }
+
+    # Update legend labels
+    handles, labels = ax.get_legend_handles_labels()
+
+    # Print existing labels for debugging
+    print("Original legend labels:", labels)
+
+    # Create new labels list based on the existing labels
+    new_legend_labels = [new_labels.get(label, label) for label in labels]  # Default to original if not found
+
+    # Update the legend with new labels
+    ax.legend(handles, new_legend_labels, title='Metrics')
+
+    # Customize the plot
+    plt.title(f'Metrics Over Time for {state}')
+    plt.gca().xaxis.set_major_locator(plt.MultipleLocator(1))
+    plt.xlabel('Survey')
+    plt.ylabel('Percentage')
+    plt.xticks(rotation=45)
+    plt.tight_layout()
+
+    # Show the plot
+    plt.show()
+```

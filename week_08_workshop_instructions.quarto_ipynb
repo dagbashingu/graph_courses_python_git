@@ -1,0 +1,477 @@
+{
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "---\n",
+        "title: \"Workshop Exercise: Grouping, Summarizing and Plotting\"\n",
+        "---\n",
+        "\n",
+        "\n",
+        "## Data Preparation\n",
+        "\n",
+        "### Load Packages\n",
+        "\n",
+        "To get started, **load in the needed packages**: pandas, numpy, plotly express.\n"
+      ],
+      "id": "9ca49edb"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Your code here\n",
+        "import pandas as pd\n",
+        "import plotly.express as px\n",
+        "import numpy as np"
+      ],
+      "id": "da690923",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Import Data\n",
+        "\n",
+        "Download the `india_tuberculosis.csv` file from the course portal and save it in your `data` folder.\n",
+        "\n",
+        "Now, **read in the `india_tuberculosis` dataset into Python from your data folder** into a DataFrame called `tb`. The DataFrame you import should have 880 rows and 21 columns. Remember to use relative paths to allow your script to use project-relative paths.\n"
+      ],
+      "id": "14f4a7b7"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Import the CSV file\n",
+        "# Your code here\n",
+        "tb = pd.read_csv(\"data/india_tuberculosis.csv\")\n",
+        "tb"
+      ],
+      "id": "ba4011b5",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Run the following line of code to convert all column names to lowercase and replace spaces with underscores:\n"
+      ],
+      "id": "c868d296"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "tb.columns = tb.columns.str.lower().str.replace(' ', '_')\n",
+        "tb"
+      ],
+      "id": "31218ee8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Calculate Total Cost\n",
+        "\n",
+        "Each patient record notes the location and cost of up to three visits. Add together these costs (`first_visit_cost`, `second_visit_cost`, and `third_visit_cost`) to create a `total_cost` variable.\n"
+      ],
+      "id": "12e17e97"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Calculate total cost\n",
+        "tb['total_cost'] = tb[\"first_visit_cost\"]+tb[\"second_visit_cost\"]+tb[\"third_visit_cost\"]\n",
+        "tb"
+      ],
+      "id": "4a8e4869",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Investigating Healthcare Costs by Education Level\n",
+        "\n",
+        "### Reorder Education Levels\n",
+        "\n",
+        "Before moving further, let's take a closer look at the `education` variable in our dataset:\n"
+      ],
+      "id": "5627b3e3"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Count unique values of education levels\n",
+        "tb[\"education\"].value_counts()"
+      ],
+      "id": "bfd18eba",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "You'll notice that education levels are ordered alphabetically by default! However, in this case, it would be more useful to reorder the education levels so that they are arranged in a chronological order.\n",
+        "\n",
+        "First, use the `replace()` method to convert the \"Graduate & Above\" values to \"Graduate\".\n"
+      ],
+      "id": "089967a0"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "tb[\"education\"] = tb[\"education\"].replace({\"Graduate & Above\": \"Graduate\"})"
+      ],
+      "id": "c4c76c57",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Now, run the code below to reorder the education levels by converting the `education` variable into a categorical variable with the levels defined in a specific order:\n"
+      ],
+      "id": "ac7a78a9"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "education_levels = [\n",
+        "    \"No Education\",\n",
+        "    \"Primary\",\n",
+        "    \"Middle\",\n",
+        "    \"Secondary\",\n",
+        "    \"Higher Secondary\",\n",
+        "    \"Graduate\",\n",
+        "    \"Missing\",\n",
+        "]\n",
+        "\n",
+        "tb[\"education\"] = pd.Categorical(\n",
+        "    tb[\"education\"], categories=education_levels, ordered=True\n",
+        ")"
+      ],
+      "id": "3597d771",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Now, inspect the `education` variable again to make sure it has been reordered correctly:\n"
+      ],
+      "id": "de2136ce"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "tb[\"education\"].value_counts()"
+      ],
+      "id": "cd8dba01",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "We will use the newly transformed `education` variable for grouping, summarizing, and plotting below.\n",
+        "\n",
+        "### Table of Costs by Education Level\n",
+        "\n",
+        "Let's compare the cost of treatment at different health facilities using a summary table. Use pandas methods to group by education level and create a summary table with two variables:\n",
+        "\n",
+        "- The number of patients in each education level\n",
+        "- The mean total cost for each education level\n",
+        "\n",
+        "Store the resulting DataFrame as an object called `edu_cost_table`.\n"
+      ],
+      "id": "5532a9ab"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Create summary table\n",
+        "edu_cost_table = tb.groupby(\"education\").agg(mean_total_cost =(\"total_cost\", \"mean\"),patient_count=(\"education\",\"size\")).reset_index()\n",
+        "edu_cost_table"
+      ],
+      "id": "b0fc559b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Reorder the rows of the summary table to go from highest to lowest mean cost. You can use the `sort_values()` method to do this.\n"
+      ],
+      "id": "d65a3c83"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Reorder summary table\n",
+        "edu_cost_table = edu_cost_table.sort_values(\"mean_total_cost\", ascending=False)\n",
+        "edu_cost_table"
+      ],
+      "id": "d7574425",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Which education level has the highest mean total cost of treatment?\n",
+        "\n",
+        "YOUR ANSWER HERE\n",
+        "\n",
+        "Below, we will visualize the data with a plot to see if there is a relationship between education level and healthcare costs.\n",
+        "\n",
+        "### Visualize Costs by Education Level\n",
+        "\n",
+        "Using `plotly.express` and the costs summary table you created earlier, create a bar plot of mean costs by education level. It should be sorted from lowest education level to highest education level.\n"
+      ],
+      "id": "88c2fd6c"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Your code here\n",
+        "px.bar(\n",
+        "    edu_cost_table,\n",
+        "    y=\"education\",\n",
+        "    x=\"mean_total_cost\",\n",
+        "    color=\"education\",\n",
+        "    category_orders={\"education\": education_levels},\n",
+        ")"
+      ],
+      "id": "675d63ca",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Write a short interpretation of the plot.\n",
+        "\n",
+        "## Investigating Healthcare Costs by Age Group\n",
+        "\n",
+        "### Create an `age_group` Variable\n",
+        "\n",
+        "The `age` variable records the age of each patient in years. We want to classify the patients into four approximately equally-sized age groups for further analysis.\n",
+        "\n",
+        "First, run the code below to determine the quantiles of the `age` variable to decide the cutoffs for each age group:\n"
+      ],
+      "id": "1050165e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Determine quantiles of age\n",
+        "tb[\"age\"].describe()"
+      ],
+      "id": "c1465ba8",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Based on the quantile markers (min, 25%, 50%, 75%, max), we can note the following four age groups with approximately equal numbers of patients:\n",
+        "\n",
+        "- 18-36\n",
+        "- 37-47\n",
+        "- 48-57\n",
+        "- 58+\n",
+        "\n",
+        "Use a custom function called `assign_age_group()`, then vectorize it using `np.vectorize()` and apply it to the `age` variable to create an `age_group` variable.\n",
+        "\n",
+        "(If you prefer, you can also use `pd.cut()` to create the `age_group` variable.)\n"
+      ],
+      "id": "2abd3bdd"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Your code here"
+      ],
+      "id": "09927255",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Now, check if we met our goal of having a similar number of patients in each age group using the `value_counts()` method:\n"
+      ],
+      "id": "6fc09eb4"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Tabulate age groups\n",
+        "tb[\"age_group\"].value_counts(normalize=True)"
+      ],
+      "id": "9994203e",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "**Checkpoint:** If you classified the age groups correctly, you will see that each age group has approximately 24-26% of the patients.\n",
+        "\n",
+        "### Table of Costs by Age Group\n",
+        "\n",
+        "Next, summarize the total healthcare costs by age group. Use pandas methods to group by `age_group` and create a summary table with two variables:\n",
+        "\n",
+        "- The number of patients in each age group\n",
+        "- The mean total cost for each age group\n",
+        "\n",
+        "Store the resulting DataFrame as an object called `age_cost_table`.\n"
+      ],
+      "id": "05c3d14b"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Create summary table for age groups\n",
+        "age_cost_table = ..."
+      ],
+      "id": "c646fd98",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "### Visualize Costs by Age Group\n",
+        "\n",
+        "Using `plotly.express` and the costs summary table you created earlier, create a bar plot of mean costs by age group.\n"
+      ],
+      "id": "41a38126"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# Your code here"
+      ],
+      "id": "d2b62817",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Write a short interpretation of the plot.\n",
+        "\n",
+        "## Bonus Challenge (Optional and Ungraded)\n",
+        "\n",
+        "If you finish early and have extra time, you can explore and transform the dataset further.\n",
+        "\n",
+        "We can look at two types of health facilities in the dataset: private and public (government).\n"
+      ],
+      "id": "e5a83d7e"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "# List of healthcare locations\n",
+        "tb[\"first_visit_location\"].unique()"
+      ],
+      "id": "84e38c4b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Note: PHC = primary health center, GH = govt hospital, etc.\n",
+        "\n",
+        "### Comparing Delays in Public vs Private Health Facilities\n",
+        "\n",
+        "Let's create a new variable indicating whether a healthcare location is private or public. We can do this using the `str.contains()` function from pandas.\n"
+      ],
+      "id": "bc56e8d6"
+    },
+    {
+      "cell_type": "code",
+      "metadata": {},
+      "source": [
+        "tb['first_visit_type'] = np.where(\n",
+        "    tb['first_visit_location'].str.contains('Pvt'),\n",
+        "    'Private',\n",
+        "    'Public'\n",
+        ")"
+      ],
+      "id": "313cf95b",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "Inspect the new variable in `tb`.\n",
+        "\n",
+        "Your assignment for this challenge is to summarize delays in treatment and compare the length of delays between private and public health facilities.\n",
+        "\n",
+        "You can start by making a summary table of `treatment_initiation_delay_in_days`, grouped by `first_visit_type`. Then visualize the data and draw insights from your findings.\n"
+      ],
+      "id": "442878e4"
+    },
+    {
+      "cell_type": "markdown",
+      "metadata": {},
+      "source": [
+        "## Wrap Up\n",
+        "\n",
+        "That's it for this assignment! Feel free to explore further and share your findings."
+      ],
+      "id": "e3c82186"
+    }
+  ],
+  "metadata": {
+    "kernelspec": {
+      "name": "python3",
+      "language": "python",
+      "display_name": "Python 3 (ipykernel)",
+      "path": "c:\\Users\\user\\Documents\\Graph_Courses_Python\\.venv\\share\\jupyter\\kernels\\python3"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 5
+}
